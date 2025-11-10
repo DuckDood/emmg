@@ -7,8 +7,13 @@
 #define DEFAULT_PATH "emmgbuild.txt";
 
 template <typename T>
-void removeVectorElement(std::vector<T>& vector, T element) {
-	vector.erase(std::remove(vector.begin(), vector.end(), element), vector.end());
+int removeVectorElement(std::vector<T>& vector, T element) {
+	auto it = std::remove(vector.begin(), vector.end(), element);
+	if(it != vector.end())  {
+		vector.erase(it, vector.end());
+		return 0;
+	}
+	return 1;
 }
 
 std::string readFile(std::string path) {
@@ -32,8 +37,8 @@ std::vector<std::string> split(std::string line, char delim = ' ') {
 	return out;
 }
 
-#define COMPILER "g++";
-#define LINKER "g++";
+#define COMPILER "${CXX}";
+#define LINKER "${CXX}";
 
 #define SRC "src";
 #define OBJ "obj"
@@ -150,6 +155,8 @@ int main(int argc, char** argv) {
 				std::cerr << "Too many output filenames for operation \"build\" at line " << lineNumber << std::endl;
 				return 1;
 			}
+			std::string flags = "";
+			for(auto i : buildFlags) flags+= " " + i;
 			makefileOut += buildPath + "/" + parts.at(1) + ": ";
 			std::string rules = "";
 			for(auto rule : buildTargets) {
@@ -157,7 +164,7 @@ int main(int argc, char** argv) {
 			}
 			makefileOut += rules;
 			makefileOut += "\n";
-			makefileOut += "\t" + linker + " " + rules + "-o " + buildPath + "/" + parts.at(1);
+			makefileOut += "\t" + linker + " " + rules + "-o " + buildPath + "/" + parts.at(1) + flags;
 			makefileOut += "\n\n";
 			all.push_back(buildPath + "/" + parts.at(1));
 		} else if(parts.at(0) == "srcdir") {
@@ -203,7 +210,20 @@ int main(int argc, char** argv) {
 			srcFlags.push_back(after);
 		} else if(parts.at(0) == "rmsrcflag") {
 			if(parts.size()<2) {
-				std::cerr << "No argument for operation \"rmsrcflag\" at line " << lineNumber << std::endl;
+				srcFlags.clear();
+			} else {
+				std::string after = "";
+				for(int i = 1; i<parts.size(); i++) {
+					after += parts.at(i) + " ";
+				}
+				after.pop_back();
+				if(removeVectorElement(srcFlags, after)) {
+					std::cerr << "Warning: trying to remove nonexistent flag \"" << after << "\" on line " << lineNumber << "\n";
+				}
+			}
+		} else if(parts.at(0) == "buildflag") {
+			if(parts.size()<2) {
+				std::cerr << "No argument for operation \"objflag\" at line " << lineNumber << std::endl;
 				return 1;
 			}
 			std::string after = "";
@@ -211,7 +231,20 @@ int main(int argc, char** argv) {
 				after += parts.at(i) + " ";
 			}
 			after.pop_back();
-			removeVectorElement(srcFlags, after);
+			buildFlags.push_back(after);
+		} else if(parts.at(0) == "rmbuildflag") {
+			if(parts.size()<2) {
+				buildFlags.clear();
+			} else {
+				std::string after = "";
+				for(int i = 1; i<parts.size(); i++) {
+					after += parts.at(i) + " ";
+				}
+				after.pop_back();
+				if(removeVectorElement(buildFlags, after)) {
+					std::cerr << "Warning: trying to remove nonexistent flag \"" << after << "\" on line " << lineNumber << "\n";
+				}
+			}
 		}
 
 		else {

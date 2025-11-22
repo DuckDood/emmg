@@ -94,8 +94,13 @@ int main(int argc, char** argv) {
 
 	std::vector<std::string> buildTargets;
 
-	std::vector<std::string> srcFlags;
-	std::vector<std::string> buildFlags;
+	std::vector<std::string> srcFlagsL;
+	std::vector<std::string> buildFlagsL;
+
+	std::vector<std::string> srcFlagsW;
+	std::vector<std::string> buildFlagsW;
+
+	bool useAll = true;
 
 	makefileOut += (std::string)"OSMODE := " + mode + "\n\n";
 
@@ -108,6 +113,10 @@ int main(int argc, char** argv) {
 		} else
 		if(parts.at(0) == "#") {
 			continue; 
+		} else
+		if(parts.at(0).at(0) == '#') {
+			// ^ funny
+			continue;
 		} else
 		if(parts.at(0) == "dir") {
 			if(parts.size()<2) {
@@ -127,7 +136,8 @@ int main(int argc, char** argv) {
 			makefileOut += "\nendif";
 			makefileOut += "\n\n";
 
-			all.push_back(parts.at(1) + "/");
+			if(useAll)
+				all.push_back(parts.at(1) + "/");
 		} else if(parts.at(0) == "src") {
 			if(parts.size()<2) {
 				std::cerr << "No source filename for operation \"src\" at line " << lineNumber << std::endl;
@@ -137,13 +147,22 @@ int main(int argc, char** argv) {
 				std::cerr << "Too many source filenames for operation \"src\" at line " << lineNumber << std::endl;
 				return 1;
 			}
-			std::string flags = "";
-			for(auto i : srcFlags) flags+= " " + i;
+			std::string flagsL = "";
+			for(auto i : srcFlagsL) flagsL+= " " + i;
+
+			std::string flagsW = "";
+			for(auto i : srcFlagsW) flagsW+= " " + i;
+
 			std::string objFilepath = objPath + "/" + parts.at(1) + ".o";
 			makefileOut += objFilepath +": " + srcPath + "/" + parts.at(1) + "\n";
-			makefileOut += "\t" + compiler + " " + srcPath + "/" + parts.at(1) + " -c -o " + objFilepath + flags;
+			makefileOut += "ifeq (${OSMODE}, l)\n";
+			makefileOut += "\t" + compiler + " " + srcPath + "/" + parts.at(1) + " -c -o " + objFilepath + flagsL;
+			makefileOut += "\nelse\n";
+			makefileOut += "\t" + compiler + " " + srcPath + "/" + parts.at(1) + " -c -o " + objFilepath + flagsW;
+			makefileOut += "\nendif\n";
 			makefileOut += "\n\n";
-			all.push_back(objFilepath);
+			if(useAll)
+				all.push_back(objFilepath);
 
 			buildTargets.push_back(objFilepath);
 		} else if(parts.at(0) == "build") {
@@ -155,18 +174,32 @@ int main(int argc, char** argv) {
 				std::cerr << "Too many output filenames for operation \"build\" at line " << lineNumber << std::endl;
 				return 1;
 			}
-			std::string flags = "";
-			for(auto i : buildFlags) flags+= " " + i;
+			std::string flagsL = "";
+			for(auto i : buildFlagsL) flagsL+= " " + i;
+
+			std::string flagsW = "";
+			for(auto i : buildFlagsW) flagsW+= " " + i;
+
 			makefileOut += buildPath + "/" + parts.at(1) + ": ";
 			std::string rules = "";
 			for(auto rule : buildTargets) {
 				rules += rule + " ";
 			}
+
+			makefileOut += "\nendif\n";
+
+
+
 			makefileOut += rules;
 			makefileOut += "\n";
-			makefileOut += "\t" + linker + " " + rules + "-o " + buildPath + "/" + parts.at(1) + flags;
+			makefileOut += "ifeq (${OSMODE}, l)\n";
+			makefileOut += "\t" + linker + " " + rules + "-o " + buildPath + "/" + parts.at(1) + flagsL;
+			makefileOut += "\nelse\n";
+			makefileOut += "\t" + linker + " " + rules + "-o " + buildPath + "/" + parts.at(1) + flagsW;
+			makefileOut += "\nendif\n";
 			makefileOut += "\n\n";
-			all.push_back(buildPath + "/" + parts.at(1));
+			if(useAll)
+				all.push_back(buildPath + "/" + parts.at(1));
 		} else if(parts.at(0) == "srcdir") {
 			if(parts.size()>2) {
 				std::cerr << "Too directories for operation \"srcdir\" at line " << lineNumber << std::endl;
@@ -197,6 +230,102 @@ int main(int argc, char** argv) {
 			} else {
 				buildPath = parts.at(1);
 			}
+		} else if(parts.at(0) == "srcflagL") {
+			if(parts.size()<2) {
+				std::cerr << "No argument for operation \"srcflag\" at line " << lineNumber << std::endl;
+				return 1;
+			}
+			std::string after = "";
+			for(int i = 1; i<parts.size(); i++) {
+				after += parts.at(i) + " ";
+			}
+			after.pop_back();
+			srcFlagsL.push_back(after);
+		} else if(parts.at(0) == "rmsrcflagL") {
+			if(parts.size()<2) {
+				srcFlagsL.clear();
+			} else {
+				std::string after = "";
+				for(int i = 1; i<parts.size(); i++) {
+					after += parts.at(i) + " ";
+				}
+				after.pop_back();
+				if(removeVectorElement(srcFlagsL, after)) {
+					std::cerr << "Warning: trying to remove nonexistent flag \"" << after << "\" on line " << lineNumber << "\n";
+				}
+			}
+		} else if(parts.at(0) == "buildflagL") {
+			if(parts.size()<2) {
+				std::cerr << "No argument for operation \"objflag\" at line " << lineNumber << std::endl;
+				return 1;
+			}
+			std::string after = "";
+			for(int i = 1; i<parts.size(); i++) {
+				after += parts.at(i) + " ";
+			}
+			after.pop_back();
+			buildFlagsL.push_back(after);
+		} else if(parts.at(0) == "rmbuildflagL") {
+			if(parts.size()<2) {
+				buildFlagsL.clear();
+			} else {
+				std::string after = "";
+				for(int i = 1; i<parts.size(); i++) {
+					after += parts.at(i) + " ";
+				}
+				after.pop_back();
+				if(removeVectorElement(buildFlagsL, after)) {
+					std::cerr << "Warning: trying to remove nonexistent flag \"" << after << "\" on line " << lineNumber << "\n";
+				}
+			}
+		} else if(parts.at(0) == "srcflagW") {
+			if(parts.size()<2) {
+				std::cerr << "No argument for operation \"srcflag\" at line " << lineNumber << std::endl;
+				return 1;
+			}
+			std::string after = "";
+			for(int i = 1; i<parts.size(); i++) {
+				after += parts.at(i) + " ";
+			}
+			after.pop_back();
+			srcFlagsW.push_back(after);
+		} else if(parts.at(0) == "rmsrcflagW") {
+			if(parts.size()<2) {
+				srcFlagsW.clear();
+			} else {
+				std::string after = "";
+				for(int i = 1; i<parts.size(); i++) {
+					after += parts.at(i) + " ";
+				}
+				after.pop_back();
+				if(removeVectorElement(srcFlagsW, after)) {
+					std::cerr << "Warning: trying to remove nonexistent flag \"" << after << "\" on line " << lineNumber << "\n";
+				}
+			}
+		} else if(parts.at(0) == "buildflagW") {
+			if(parts.size()<2) {
+				std::cerr << "No argument for operation \"objflag\" at line " << lineNumber << std::endl;
+				return 1;
+			}
+			std::string after = "";
+			for(int i = 1; i<parts.size(); i++) {
+				after += parts.at(i) + " ";
+			}
+			after.pop_back();
+			buildFlagsW.push_back(after);
+		} else if(parts.at(0) == "rmbuildflagW") {
+			if(parts.size()<2) {
+				buildFlagsW.clear();
+			} else {
+				std::string after = "";
+				for(int i = 1; i<parts.size(); i++) {
+					after += parts.at(i) + " ";
+				}
+				after.pop_back();
+				if(removeVectorElement(buildFlagsW, after)) {
+					std::cerr << "Warning: trying to remove nonexistent flag \"" << after << "\" on line " << lineNumber << "\n";
+				}
+			}
 		} else if(parts.at(0) == "srcflag") {
 			if(parts.size()<2) {
 				std::cerr << "No argument for operation \"srcflag\" at line " << lineNumber << std::endl;
@@ -207,18 +336,24 @@ int main(int argc, char** argv) {
 				after += parts.at(i) + " ";
 			}
 			after.pop_back();
-			srcFlags.push_back(after);
+			srcFlagsW.push_back(after);
+			srcFlagsL.push_back(after);
 		} else if(parts.at(0) == "rmsrcflag") {
 			if(parts.size()<2) {
-				srcFlags.clear();
+				srcFlagsW.clear();
 			} else {
 				std::string after = "";
 				for(int i = 1; i<parts.size(); i++) {
 					after += parts.at(i) + " ";
 				}
 				after.pop_back();
-				if(removeVectorElement(srcFlags, after)) {
-					std::cerr << "Warning: trying to remove nonexistent flag \"" << after << "\" on line " << lineNumber << "\n";
+				if(removeVectorElement(srcFlagsW, after)) {
+					std::cerr << "Warning: trying to remove nonexistent Windows flag \"" << after << "\" on line " << lineNumber << "\n";
+					return 1;
+				}
+				if(removeVectorElement(srcFlagsL, after)) {
+					std::cerr << "Warning: trying to remove nonexistent Linux flag \"" << after << "\" on line " << lineNumber << "\n";
+					return 1;
 				}
 			}
 		} else if(parts.at(0) == "buildflag") {
@@ -231,18 +366,56 @@ int main(int argc, char** argv) {
 				after += parts.at(i) + " ";
 			}
 			after.pop_back();
-			buildFlags.push_back(after);
+			buildFlagsW.push_back(after);
+			buildFlagsL.push_back(after);
 		} else if(parts.at(0) == "rmbuildflag") {
 			if(parts.size()<2) {
-				buildFlags.clear();
+				buildFlagsW.clear();
 			} else {
 				std::string after = "";
 				for(int i = 1; i<parts.size(); i++) {
 					after += parts.at(i) + " ";
 				}
 				after.pop_back();
-				if(removeVectorElement(buildFlags, after)) {
-					std::cerr << "Warning: trying to remove nonexistent flag \"" << after << "\" on line " << lineNumber << "\n";
+				if(removeVectorElement(buildFlagsW, after)) {
+					std::cerr << "Warning: trying to remove nonexistent Windows flag \"" << after << "\" on line " << lineNumber << "\n";
+					return 1;
+				}
+				if(removeVectorElement(buildFlagsL, after)) {
+					std::cerr << "Warning: trying to remove nonexistent Linux flag \"" << after << "\" on line " << lineNumber << "\n";
+					return 1;
+				}
+			}
+		} else if(parts.at(0) == "all") {
+			if(parts.size()<2) {
+				std::cerr << "No argument for operation \"all\" at line " << lineNumber << std::endl;
+				return 1;
+			}
+			for(int i = 1; i<parts.size();i++) {
+				all.push_back(parts.at(i));
+			}
+		} else if(parts.at(0) == "stopall") {
+			useAll = false;
+		} else if(parts.at(0) == "startall") {
+			useAll = true;
+		} else if(parts.at(0) == "addbuild") {
+			if(parts.size()<2) {
+				std::cerr << "No argument for operation \"addbuild\" at line " << lineNumber << std::endl;
+				return 1;
+			}
+			for(int i = 1; i<parts.size();i++) {
+				buildTargets.push_back(parts.at(i));
+			}
+
+		} else if(parts.at(0) == "rmbuild") {
+			if(parts.size()<2) {
+				buildTargets.clear();
+			} else {
+				for(int i = 1; i<parts.size(); i++) {
+					if(removeVectorElement(buildTargets, parts.at(i))) {
+						std::cerr << "Warning: trying to remove nonexistent target \"" << parts.at(i) << "\" on line " << lineNumber << "\n";
+						return 1;
+					}
 				}
 			}
 		}

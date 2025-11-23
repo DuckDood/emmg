@@ -1,18 +1,37 @@
-all: obj/ build/ obj/main.o build/emmg 
+all: obj/ build/ obj/main.cpp.o build/emmg 
+OSMODE := l
+
+obj/:
+ifeq (${OSMODE}, l)
+	mkdir -p obj
+else
+	mkdir obj
+endif
+
+build/:
+ifeq (${OSMODE}, l)
+	mkdir -p build
+else
+	mkdir build
+endif
+
+obj/main.cpp.o: src/main.cpp
+ifeq (${OSMODE}, l)
+	${CXX} src/main.cpp -c -o obj/main.cpp.o
+else
+	${CXX} src/main.cpp -c -o obj/main.cpp.o
+endif
+
 
 clean:
-	rm -r obj/ build/ 
-.PHONY: clean
+	rm -r obj
+	rm -r build
 
-obj/: 
-	mkdir -p obj/
+build/emmg: obj/main.cpp.o 
+ifeq (${OSMODE}, l)
+	${CXX} obj/main.cpp.o -o build/emmg
+else
+	${CXX} obj/main.cpp.o -o build/emmg
+endif
 
-build/: 
-	mkdir -p build/
-
-obj/main.o: src/main.cpp
-	${CXX} src/main.cpp -c -o obj/main.o  
-
-build/emmg: obj/main.o 
-	${CXX} obj/main.o  -o build/emmg  
 

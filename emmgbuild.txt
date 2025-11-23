@@ -1,0 +1,11 @@
+dir obj
+dir build
+src main.cpp
+
+embedmake
+clean:
+	rm -r obj
+	rm -r build
+endmake
+
+build emmg

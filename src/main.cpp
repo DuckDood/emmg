@@ -5,6 +5,7 @@
 #include <sstream>
 
 #define DEFAULT_PATH "emmgbuild.txt";
+#define MAKE_PATH "Makefile";
 
 template <typename T>
 int removeVectorElement(std::vector<T>& vector, T element) {
@@ -51,10 +52,12 @@ int main(int argc, char** argv) {
 	"Options:" "\n"
 	"\t-w: Compile Makefile for Windows." "\n"
 	"\t-l: Compile Makefile for Linux (default)." "\n"
-	"\t-f[filepath]: Use filepath (no spaces)." "\n"
+	"\t-f[filepath]: Use filepath instead of emmgbuild.txt (no spaces)." "\n"
+	"\t-o[filepath]: Use filepath instead of writing to Makefile (no spaces)." "\n"
 	;
 
 	std::string readPath = DEFAULT_PATH;
+	std::string outPath = MAKE_PATH;
 
 	char mode = 'l';
 	for(int i = 1; i<argc; i++) {
@@ -67,6 +70,9 @@ int main(int argc, char** argv) {
 		} else
 		if(argStr.rfind("-f",0) == 0) {
 			readPath = argStr.substr(2);
+		} else
+		if(argStr.rfind("-o",0) == 0) {
+			outPath = argStr.substr(2);
 		} else
 		if(argStr == "-h") {
 			std::cout << helpText << std::endl;
@@ -105,9 +111,22 @@ int main(int argc, char** argv) {
 	makefileOut += (std::string)"OSMODE := " + mode + "\n\n";
 
 	int lineNumber = 0;
+	int inMakeEmbed = 0;
 	while(std::getline(fileStream, line)) {
 		lineNumber++;
 		std::vector<std::string> parts = split(line);
+		if(inMakeEmbed > 0) {
+			if(parts.at(0) == "endmake") {
+				if(inMakeEmbed > 1) {
+					makefileOut += "endif\n";
+				}
+				makefileOut += "\n";
+				inMakeEmbed = false;
+				continue;
+			}
+			makefileOut += line + "\n";
+			continue;
+		} else
 		if(parts.size() < 1) {
 			continue; 
 		} else
@@ -174,6 +193,10 @@ int main(int argc, char** argv) {
 				std::cerr << "Too many output filenames for operation \"build\" at line " << lineNumber << std::endl;
 				return 1;
 			}
+			if(buildTargets.empty()) {
+				std::cerr << "No targets for operation \"build\" at line " << lineNumber << std::endl;
+				return 1;
+			}
 			std::string flagsL = "";
 			for(auto i : buildFlagsL) flagsL+= " " + i;
 
@@ -185,9 +208,6 @@ int main(int argc, char** argv) {
 			for(auto rule : buildTargets) {
 				rules += rule + " ";
 			}
-
-			makefileOut += "\nendif\n";
-
 
 
 			makefileOut += rules;
@@ -418,6 +438,14 @@ int main(int argc, char** argv) {
 					}
 				}
 			}
+		} else if(parts.at(0) == "embedmake") {
+			inMakeEmbed = 1;
+		} else if(parts.at(0) == "embedmakeL") {
+			inMakeEmbed = 2;
+			makefileOut += "ifeq (${OSMODE}, l)\n";
+		} else if(parts.at(0) == "embedmakeW") {
+			inMakeEmbed = 2;
+			makefileOut += "ifeq (${OSMODE}, w)\n";
 		}
 
 		else {
@@ -431,5 +459,7 @@ int main(int argc, char** argv) {
 	}
 	makefileOut = allStr + "\n" + makefileOut;
 	
-	std::cout << makefileOut;
+	//std::cout << makefileOut;
+	std::ofstream fileOutStream(outPath);
+	fileOutStream << makefileOut;
 }

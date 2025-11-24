@@ -2,10 +2,17 @@ dir obj
 dir build
 src main.cpp
 
+build emmg
+
 embedmake
 clean:
 	rm -r obj
 	rm -r build
+.PHONY: clean
 endmake
 
-build emmg
+embedmakeL
+install:
+	install build/emmg /usr/local/bin/
+.PHONY: install
+endmake

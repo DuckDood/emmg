@@ -47,6 +47,7 @@ std::vector<std::string> split(std::string line, char delim = ' ') {
 
 int main(int argc, char** argv) {
 	const std::string helpText = 
+	"Easy macro makefile generator"
 	"Usage: emmg [options]" "\n"
 	"Will read emmgbuild.txt by default." "\n"
 	"Options:" "\n"
@@ -439,11 +440,23 @@ int main(int argc, char** argv) {
 				}
 			}
 		} else if(parts.at(0) == "embedmake") {
+			if(parts.size()>1) {
+				std::cerr << "Embedding make does not take any arguments. Line " << lineNumber << std::endl;
+				return 1;
+			}
 			inMakeEmbed = 1;
 		} else if(parts.at(0) == "embedmakeL") {
+			if(parts.size()>1) {
+				std::cerr << "Embedding make does not take any arguments. Line " << lineNumber << std::endl;
+				return 1;
+			}
 			inMakeEmbed = 2;
 			makefileOut += "ifeq (${OSMODE}, l)\n";
 		} else if(parts.at(0) == "embedmakeW") {
+			if(parts.size()>1) {
+				std::cerr << "Embedding make does not take any arguments. Line " << lineNumber << std::endl;
+				return 1;
+			}
 			inMakeEmbed = 2;
 			makefileOut += "ifeq (${OSMODE}, w)\n";
 		}

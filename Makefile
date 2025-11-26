@@ -23,10 +23,6 @@ else
 endif
 
 
-clean:
-	rm -r obj
-	rm -r build
-
 build/emmg: obj/main.cpp.o 
 ifeq (${OSMODE}, l)
 	${CXX} obj/main.cpp.o -o build/emmg
@@ -34,4 +30,15 @@ else
 	${CXX} obj/main.cpp.o -o build/emmg
 endif
 
+
+clean:
+	rm -r obj
+	rm -r build
+.PHONY: clean
+
+ifeq (${OSMODE}, l)
+install:
+	install build/emmg /usr/local/bin/
+.PHONY: install
+endif
 

@@ -107,6 +107,8 @@ int main(int argc, char** argv) {
 	std::vector<std::string> srcFlagsW;
 	std::vector<std::string> buildFlagsW;
 
+	std::vector<std::string> extrachecks;
+
 	bool useAll = true;
 
 	makefileOut += (std::string)"OSMODE := " + mode + "\n\n";
@@ -147,8 +149,12 @@ int main(int argc, char** argv) {
 				std::cerr << "Too many directory names for operation \"dir\" at line " << lineNumber << std::endl;
 				return 1;
 			}
+			std::string extra = "";
+			for(auto check : extrachecks) {
+				extra+=check+" ";
+			}
 
-			makefileOut += parts.at(1) + "/:\n";
+			makefileOut += parts.at(1) + "/: " + extra + "\n";
 			makefileOut += "ifeq (${OSMODE}, l)\n";
 			makefileOut += "\tmkdir -p " + parts.at(1);
 			makefileOut += "\nelse\n";
@@ -173,8 +179,13 @@ int main(int argc, char** argv) {
 			std::string flagsW = "";
 			for(auto i : srcFlagsW) flagsW+= " " + i;
 
+			std::string extra = "";
+			for(auto check : extrachecks) {
+				extra+=check+" ";
+			}
+
 			std::string objFilepath = objPath + "/" + parts.at(1) + ".o";
-			makefileOut += objFilepath +": " + srcPath + "/" + parts.at(1) + "\n";
+			makefileOut += objFilepath +": " + srcPath + "/" + parts.at(1) + " " + extra + "\n";
 			makefileOut += "ifeq (${OSMODE}, l)\n";
 			makefileOut += "\t" + compiler + " " + srcPath + "/" + parts.at(1) + " -c -o " + objFilepath + flagsL;
 			makefileOut += "\nelse\n";
@@ -210,8 +221,16 @@ int main(int argc, char** argv) {
 				rules += rule + " ";
 			}
 
+			std::string extra = "";
+			for(auto check : extrachecks) {
+				extra+=check+" ";
+			}
+
 
 			makefileOut += rules;
+			// rules will already have a space at the end and itl look kinda ugly if add this space lowk
+			//makefileOut += " ";
+			makefileOut += extra;
 			makefileOut += "\n";
 			makefileOut += "ifeq (${OSMODE}, l)\n";
 			makefileOut += "\t" + linker + " " + rules + "-o " + buildPath + "/" + parts.at(1) + flagsL;
@@ -223,7 +242,7 @@ int main(int argc, char** argv) {
 				all.push_back(buildPath + "/" + parts.at(1));
 		} else if(parts.at(0) == "srcdir") {
 			if(parts.size()>2) {
-				std::cerr << "Too directories for operation \"srcdir\" at line " << lineNumber << std::endl;
+				std::cerr << "Too many directories for operation \"srcdir\" at line " << lineNumber << std::endl;
 				return 1;
 			}
 			if(parts.size()<2) {
@@ -233,7 +252,7 @@ int main(int argc, char** argv) {
 			}
 		} else if(parts.at(0) == "objdir") {
 			if(parts.size()>2) {
-				std::cerr << "Too directories for operation \"objdir\" at line " << lineNumber << std::endl;
+				std::cerr << "Too many directories for operation \"objdir\" at line " << lineNumber << std::endl;
 				return 1;
 			}
 			if(parts.size()<2) {
@@ -459,6 +478,25 @@ int main(int argc, char** argv) {
 			}
 			inMakeEmbed = 2;
 			makefileOut += "ifeq (${OSMODE}, w)\n";
+		} else if(parts.at(0) == "check") {
+			if(parts.size()<2) {
+				std::cerr << "No argmuent for operation \"check\" at line " << lineNumber << std::endl;
+				return 1;
+			}
+			for(int i = 1; i<parts.size(); i++) {
+				extrachecks.push_back(parts.at(i));
+			}
+		} else if(parts.at(0) == "rmcheck") {
+			if(parts.size()<2) {
+				extrachecks.clear();
+			} else {
+				for(int i = 1; i<parts.size(); i++) {
+					if(removeVectorElement(extrachecks, parts.at(i))) {
+						std::cerr << "Warning: trying to remove nonexistent check \"" << parts.at(i) << "\" on line " << lineNumber << "\n";
+						return 1;
+					}
+				}
+			}
 		}
 
 		else {

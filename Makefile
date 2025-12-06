@@ -1,21 +1,21 @@
 all: obj/ build/ obj/main.cpp.o build/emmg 
 OSMODE := l
 
-obj/:
+obj/: 
 ifeq (${OSMODE}, l)
 	mkdir -p obj
 else
 	mkdir obj
 endif
 
-build/:
+build/: 
 ifeq (${OSMODE}, l)
 	mkdir -p build
 else
 	mkdir build
 endif
 
-obj/main.cpp.o: src/main.cpp
+obj/main.cpp.o: src/main.cpp 
 ifeq (${OSMODE}, l)
 	${CXX} src/main.cpp -c -o obj/main.cpp.o
 else

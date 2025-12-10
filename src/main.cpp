@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -55,12 +56,14 @@ int main(int argc, char** argv) {
 	"\t-l: Compile Makefile for Linux (default)." "\n"
 	"\t-f[filepath]: Use filepath instead of emmgbuild.txt (no spaces)." "\n"
 	"\t-o[filepath]: Use filepath instead of writing to Makefile (no spaces)." "\n"
+	"\t-g: Generate template emmgbuild.txt. Will ignore all other flags other than -f to change where template is generated." "\n"
 	;
 
 	std::string readPath = DEFAULT_PATH;
 	std::string outPath = MAKE_PATH;
 
 	char mode = 'l';
+	bool genMake = false;
 	for(int i = 1; i<argc; i++) {
 		std::string argStr = argv[i];
 		if(argStr == "-w") {
@@ -78,10 +81,40 @@ int main(int argc, char** argv) {
 		if(argStr == "-h") {
 			std::cout << helpText << std::endl;
 			return 0;
-		} else {
+		} else
+		if(argStr == "-g") {
+			genMake = true;
+		}
+		else {
 			std::cout << "Unknown option." << std::endl;
 			return 1;
 		}
+	}
+	if(genMake) {
+		if(std::filesystem::exists(readPath)) {
+			std::cout << "The path for the template already exists. Continue? y/N\n";
+			char input;
+			std::cin >> input;
+			if(!(input == 'y' || input == 'Y')) return 0;
+		}
+		std::ofstream templateOut(readPath);
+		std::string templateString =
+			"dir obj" "\n"
+			"dir build" "\n"
+			"" "\n"
+			"# Put src here" "\n"
+			"" "\n"
+			"# Put build here" "\n"
+			"" "\n"
+			"embedmake" "\n"
+			"clean:" "\n"
+			"	rm -r obj" "\n"
+			"	rm -r build" "\n"
+			".PHONY: clean" "\n"
+			"endmake"
+			;
+		templateOut << templateString;
+		return 0;
 	}
 
 	std::string file = readFile(readPath);
@@ -496,6 +529,31 @@ int main(int argc, char** argv) {
 						return 1;
 					}
 				}
+			}
+		} else if(parts.at(0) == "compiler") {
+			if(parts.size()<2) {
+				compiler = COMPILER;
+			} else {
+				std::string temp = "";
+				
+				for(int i = 1; i<parts.size(); i++) {
+					temp+=parts.at(i);
+					
+				}
+
+				compiler = temp;
+			}
+		} else if(parts.at(0) == "linker") {
+			if(parts.size()<2) {
+				linker = LINKER;
+			} else {
+				std::string temp = "";
+
+				for(int i = 1; i<parts.size(); i++) {
+					temp+=parts.at(i);
+				}
+
+				linker = temp;
 			}
 		}
 

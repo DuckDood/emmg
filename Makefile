@@ -42,3 +42,16 @@ install:
 .PHONY: install
 endif
 
+
+gencommands:
+	mkdir emmgtemp
+ifeq (${OSMODE}, l)
+	clang src/main.cpp -c -o obj/main.cpp.o -MJ emmgtemp/0.json
+else
+	clang src/main.cpp -c -o obj/main.cpp.o -MJ emmgtemp/0.json
+endif
+# not cross platform here sad i think
+	echo [ > emmgtemp/[
+	echo ] > emmgtemp/]
+	cat emmgtemp/[ emmgtemp/*.json emmgtemp/] > compile_commands.json
+	rm -r emmgtemp

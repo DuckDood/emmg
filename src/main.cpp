@@ -142,6 +142,9 @@ int main(int argc, char** argv) {
 
 	std::vector<std::string> extrachecks;
 
+	int cmdCounter = 0;
+	std::string commandGen = "";
+
 	bool useAll = true;
 
 	makefileOut += (std::string)"OSMODE := " + mode + "\n\n";
@@ -225,6 +228,14 @@ int main(int argc, char** argv) {
 			makefileOut += "\t" + compiler + " " + srcPath + "/" + parts.at(1) + " -c -o " + objFilepath + flagsW;
 			makefileOut += "\nendif\n";
 			makefileOut += "\n\n";
+
+			commandGen += "ifeq (${OSMODE}, l)\n";
+			commandGen += "\t" + (std::string)"clang" + " " + srcPath + "/" + parts.at(1) + " -c -o " + objFilepath + flagsL + " -MJ emmgtemp/" + std::to_string(cmdCounter) + ".json";
+			commandGen += "\nelse\n";
+			commandGen += "\t" + (std::string)"clang" + " " + srcPath + "/" + parts.at(1) + " -c -o " + objFilepath + flagsW + " -MJ emmgtemp/" + std::to_string(cmdCounter) + ".json";
+			commandGen += "\nendif\n";
+			cmdCounter++;
+
 			if(useAll)
 				all.push_back(objFilepath);
 
@@ -569,6 +580,14 @@ int main(int argc, char** argv) {
 		allStr += target + " ";
 	}
 	makefileOut = allStr + "\n" + makefileOut;
+
+	makefileOut += "\ngencommands:\n\tmkdir emmgtemp\n";
+	makefileOut += commandGen;
+	makefileOut += "# not cross platform here sad i think\n";
+	makefileOut += "\techo [ > emmgtemp/[\n";
+	makefileOut += "\techo ] > emmgtemp/]\n";
+	makefileOut += "\tcat emmgtemp/[ emmgtemp/*.json emmgtemp/] > compile_commands.json\n";
+	makefileOut += "\trm -r emmgtemp\n";
 	
 	//std::cout << makefileOut;
 	std::ofstream fileOutStream(outPath);

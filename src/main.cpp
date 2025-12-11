@@ -537,9 +537,10 @@ int main(int argc, char** argv) {
 				std::string temp = "";
 				
 				for(int i = 1; i<parts.size(); i++) {
-					temp+=parts.at(i);
+					temp+=parts.at(i) + " ";
 					
 				}
+				temp.pop_back();
 
 				compiler = temp;
 			}
@@ -550,8 +551,9 @@ int main(int argc, char** argv) {
 				std::string temp = "";
 
 				for(int i = 1; i<parts.size(); i++) {
-					temp+=parts.at(i);
+					temp+=parts.at(i) + " ";
 				}
+				temp.pop_back();
 
 				linker = temp;
 			}

@@ -46,9 +46,9 @@ endif
 gencommands:
 	mkdir emmgtemp
 ifeq (${OSMODE}, l)
-	clang src/main.cpp -c  -MJ emmgtemp/0.json -fdriver-only
+	clang src/main.cpp  -MJ emmgtemp/0.json -fsyntax-only
 else
-	clang src/main.cpp -c  -MJ emmgtemp/0.json -fdriver-only
+	clang src/main.cpp  -MJ emmgtemp/0.json -fsyntax-only
 endif
 # not cross platform here sad i think
 	echo [ > emmgtemp/[

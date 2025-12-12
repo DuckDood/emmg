@@ -230,9 +230,9 @@ int main(int argc, char** argv) {
 			makefileOut += "\n\n";
 
 			commandGen += "ifeq (${OSMODE}, l)\n";
-			commandGen += "\t" + (std::string)"clang" + " " + srcPath + "/" + parts.at(1) + " -c " + flagsL + " -MJ emmgtemp/" + std::to_string(cmdCounter) + ".json -fdriver-only";
+			commandGen += "\t" + (std::string)"clang" + " " + srcPath + "/" + parts.at(1) + " " + flagsL + " -MJ emmgtemp/" + std::to_string(cmdCounter) + ".json -fsyntax-only";
 			commandGen += "\nelse\n";
-			commandGen += "\t" + (std::string)"clang" + " " + srcPath + "/" + parts.at(1) + " -c " + flagsW + " -MJ emmgtemp/" + std::to_string(cmdCounter) + ".json -fdriver-only";
+			commandGen += "\t" + (std::string)"clang" + " " + srcPath + "/" + parts.at(1) + " " + flagsW + " -MJ emmgtemp/" + std::to_string(cmdCounter) + ".json -fsyntax-only";
 			commandGen += "\nendif\n";
 			cmdCounter++;
 
